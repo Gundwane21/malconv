@@ -35,10 +35,11 @@ use_gpu =  True if torch.cuda.is_available() else False
 train_label_path = '/content/drive/MyDrive/microsoft_big' # Training label  
 
 use_cpu = 1
-batch_size: 5            #
+batch_size: 50            #
 window_size = 500          # Kernel size & stride for Malconv (defualt : 500)
 
 
+# evaluation function which will run for every EPOCH
 def model_eval(model, loader, loss_fn):
     total_loss = 0
     model.eval()
@@ -56,7 +57,7 @@ def model_eval(model, loader, loss_fn):
 
     return average_loss
 
-
+# training function which will run for every EPOCH
 def train_fn(loader, model, optimizer, loss_fn):
     loop = tqdm(loader, file=sys.stdout)
     total_loss = 0
@@ -64,6 +65,12 @@ def train_fn(loader, model, optimizer, loss_fn):
     for index, (data, target) in enumerate(loop):
         data = data.to(device=DEVICE)
         target = target.float().to(device=DEVICE)
+
+        print("input data")
+        print(data)
+        print("targets")
+        print(target)
+
 
         # forward
         with torch.cuda.amp.autocast():
@@ -76,12 +83,17 @@ def train_fn(loader, model, optimizer, loss_fn):
         loss.backward()
         optimizer.step()
 
+        print(f"loss {loss}")
+        print("predictions")
+        print(predictions)
+    
         # update tqdm loop
         loop.set_postfix(loss=loss.item())
 
     average_loss = total_loss / len(loader)
     return average_loss
 
+# get the data and initiate loaders for train and validation
 def get_loaders():
     all_labels_path = os.path.join(train_label_path,'trainLabels.csv')
     all_files_path = train_data_path
@@ -129,20 +141,21 @@ def get_loaders():
                             batch_size=batch_size, shuffle=False, num_workers=use_cpu)
     return dataloader, validloader
 
+# driver of the code
 def main():
 
     train_loader,val_loader  = get_loaders()
 
     model = MalConv(input_length=first_n_byte,window_size=window_size)
-    bce_loss = nn.BCEWithLogitsLoss()
+    criterion = nn.CrossEntropyLoss()
     softmax = nn.Softmax()
 
     if use_gpu:
         model = model.cuda()
-        bce_loss = bce_loss.cuda()
+        criterion = criterion.cuda()
         softmax = softmax.cuda()
 
-    loss_fn = nn.BCEWithLogitsLoss()
+    loss_fn = criterion 
     optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
     # scaler = torch.cuda.amp.GradScaler()
 

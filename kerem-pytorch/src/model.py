@@ -15,7 +15,7 @@ class MalConv(nn.Module):
         self.pooling = nn.MaxPool1d(int(input_length/window_size))
 
         self.fc_1 = nn.Linear(128,128)
-        self.fc_2 = nn.Linear(128,1)
+        self.fc_2 = nn.Linear(128,9)
 
         self.softmax = nn.Softmax()
         self.sigmoid = nn.Sigmoid()
