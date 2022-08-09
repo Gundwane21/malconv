@@ -23,7 +23,7 @@ NUM_WORKERS = 0
 PIN_MEMORY = True
 LOAD_MODEL = False
 
-PARENT_DIR = '/content/drive/MyDrive/src/MalConv-Pytorch/log'
+PARENT_DIR = '/content/malconv/kerem-pytorch/logs/'
 DATASET = 'microsoft-big'
 DATA_COMB = 'small-random'
 
