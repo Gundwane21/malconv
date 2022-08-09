@@ -46,8 +46,7 @@ def model_eval(model, loader, loss_fn):
     with torch.no_grad():
         for index, (data, target) in enumerate(loader):
             data = data.to(device=DEVICE)
-            target = target.float().to(device=DEVICE)
-
+            target = target.type(torch.LongTensor).to(device=DEVICE)
             with torch.cuda.amp.autocast():
                 prediction = model(data)
                 loss = loss_fn(prediction, target)
@@ -64,12 +63,12 @@ def train_fn(loader, model, optimizer, loss_fn):
 
     for index, (data, target) in enumerate(loop):
         data = data.to(device=DEVICE)
-        target = target.float().to(device=DEVICE)
+        target = target.type(torch.LongTensor).to(device=DEVICE)
 
-        print("input data")
-        print(data)
-        print("targets")
-        print(target)
+#        print("input data")
+#        print(data)
+#        print("targets")
+#        print(target)
 
 
         # forward
@@ -83,9 +82,9 @@ def train_fn(loader, model, optimizer, loss_fn):
         loss.backward()
         optimizer.step()
 
-        print(f"loss {loss}")
-        print("predictions")
-        print(predictions)
+ #       print(f"loss {loss}")
+ #       print("predictions")
+ #       print(predictions)
     
         # update tqdm loop
         loop.set_postfix(loss=loss.item())
