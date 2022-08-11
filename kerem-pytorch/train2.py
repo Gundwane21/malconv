@@ -29,6 +29,7 @@ DATA_COMB = 'small-random'
 
 train_data_path = '/content/drive/MyDrive/microsoft_big/train'                    # Training data
 valid_data_path = train_data_path
+test_data_path = train_data_path
 first_n_byte = 2000000
 batch_size = BATCH_SIZE
 use_gpu =  True if torch.cuda.is_available() else False
@@ -37,6 +38,23 @@ train_label_path = '/content/drive/MyDrive/microsoft_big' # Training label
 use_cpu = 1
 batch_size: 50            #
 window_size = 500          # Kernel size & stride for Malconv (defualt : 500)
+
+# evaluation function which will run for every EPOCH
+def model_test(model, loader, loss_fn):
+    total_loss = 0
+    model.eval()
+    with torch.no_grad():
+        for index, (data, target) in enumerate(loader):
+            data = data.to(device=DEVICE)
+            target = target.type(torch.LongTensor).to(device=DEVICE)
+            prediction = model(data)
+            print(f'shape of prediction: {prediction.shape}')
+            print(prediction)
+            print(f'shape of target: {target.shape}')
+            print(target)
+            
+
+    return average_loss
 
 
 # evaluation function which will run for every EPOCH
@@ -119,14 +137,22 @@ def get_loaders():
 
 
     # using the train test split function
-    X_train, X_val,y_train, y_val = train_test_split(X,y ,
-                                    random_state=104, 
-                                    test_size=0.25, 
+    X_train, X_test,y_train, y_test = train_test_split(X,y ,
+                                    test_size=0.20, 
                                     shuffle=True)
+    # using the train test split function
+    X_train, X_val,y_train, y_val = train_test_split(X,y ,
+                                    test_size=0.20, 
+                                    shuffle=True)
+
+
+    
     X_train = X_train.to_list()
     y_train = y_train.to_list()
     X_val = X_val.to_list()
     y_val = y_val.to_list()
+    X_test = X_test.to_list()
+    y_test = y_test.to_list()
 
     for i in range(len(X_train)):
       X_train[i] = X_train[i]+'.bytes'
@@ -134,16 +160,23 @@ def get_loaders():
     for i in range(len(X_val)):
       X_val[i] = X_val[i]+'.bytes'
 
-    dataloader = DataLoader(ExeDataset(X_train, train_data_path, y_train,first_n_byte),
+    for i in range(len(X_val)):
+      X_test[i] = X_test[i]+'.bytes'
+
+
+    train_loader = DataLoader(ExeDataset(X_train, train_data_path, y_train,first_n_byte),
                                 batch_size=batch_size, shuffle=True, num_workers=use_cpu)
-    validloader = DataLoader(ExeDataset(X_val, valid_data_path, y_val,first_n_byte),
+    valid_loader = DataLoader(ExeDataset(X_val, valid_data_path, y_val,first_n_byte),
                             batch_size=batch_size, shuffle=False, num_workers=use_cpu)
-    return dataloader, validloader
+    test_loader = DataLoader(ExeDataset(X_test, test_data_path, y_test,first_n_byte),
+                            batch_size=batch_size, shuffle=False, num_workers=use_cpu)
+
+    return train_loader, valid_loader, test_loader
 
 # driver of the code
 def main():
 
-    train_loader,val_loader  = get_loaders()
+    train_loader,val_loader,test_loader  = get_loaders()
 
     model = MalConv(input_length=first_n_byte,window_size=window_size)
     criterion = nn.CrossEntropyLoss()
