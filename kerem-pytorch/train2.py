@@ -16,18 +16,18 @@ from sklearn.model_selection import train_test_split
 # Hyperparameters etc.
 LEARNING_RATE = 0.0001
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-BATCH_SIZE = 50
+BATCH_SIZE = 25
 NUM_EPOCHS = 10
 NUM_WORKERS = 0
 
 PIN_MEMORY = True
 LOAD_MODEL = False
 
-PARENT_DIR = '/content/malconv/kerem-pytorch/logs/'
+PARENT_DIR = '/content/drive/MyDrive/runs/kerem-pytorch'
 DATASET = 'microsoft-big'
 DATA_COMB = 'small-random'
 
-train_data_path = '/content/drive/MyDrive/microsoft_big/10'                    # Training data
+train_data_path = '/content/drive/MyDrive/microsoft_big/train_small_1_10'                    # Training data
 valid_data_path = train_data_path
 test_data_path = train_data_path
 first_n_byte = 2000000
@@ -51,7 +51,7 @@ def model_test(model, loader):
             data = data.to(device=DEVICE)
             target = target.type(torch.LongTensor).to(device=DEVICE)
             prediction = model(data)
-            y_true.extend(target.numpy())
+            y_true.extend(target.cpu().numpy())
             _, predicted = torch.max(prediction, 1)
             y_pred.extend(predicted.cpu().numpy())            
 
@@ -119,6 +119,19 @@ def train_fn(loader, model, optimizer, loss_fn):
     average_loss = total_loss / len(loader)
     return average_loss
 
+def draw_graph(loss_train,loss_val):
+  import matplotlib.pyplot as plt
+
+  epochs = len(loss_train)
+  plt.plot(epochs, loss_train, 'g', label='Training loss')
+  plt.plot(epochs, loss_val, 'b', label='validation loss')
+  plt.title('Training and Validation loss')
+  plt.xlabel('Epochs')
+  plt.ylabel('Loss')
+  plt.legend()
+  plt.show()
+
+
 # get the data and initiate loaders for train and validation
 def get_loaders():
     all_labels_path = os.path.join(train_label_path,'trainLabels.csv')
@@ -185,6 +198,8 @@ def get_loaders():
 # driver of the code
 def main():
 
+    train_losses = []
+    val_losses = []
     train_loader,val_loader,test_loader  = get_loaders()
 
     model = MalConv(input_length=first_n_byte,window_size=window_size)
@@ -205,7 +220,6 @@ def main():
     min_epoch = 0
     min_delta = 0
     patience = 50
-    val_losses = []
 
 
     # create output directory
@@ -226,6 +240,7 @@ def main():
         print_and_log(f"\nTraining EPOCH {epoch + 1}", log_file)
         train_loss = train_fn(train_loader, model, optimizer, loss_fn)
         print_and_log(f"\nAverage Training Loss for EPOCH {epoch + 1}: {train_loss}", log_file)
+        train_losses.append(train_loss)
 
         # save model
         checkpoint = {
@@ -255,6 +270,8 @@ def main():
     # create txt file to keep scores
     txt_file_path = paths["output_path"] + "/scores.txt"
     txt_file = open(txt_file_path, "w")
+
+    draw_graph(train_losses, val_losses)
 
     model_test(model, test_loader)
 
