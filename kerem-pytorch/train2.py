@@ -16,7 +16,7 @@ from sklearn.model_selection import train_test_split
 # Hyperparameters etc.
 LEARNING_RATE = 0.0001
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-BATCH_SIZE = 20
+BATCH_SIZE = 50
 NUM_EPOCHS = 10
 NUM_WORKERS = 0
 
@@ -27,7 +27,7 @@ PARENT_DIR = '/content/malconv/kerem-pytorch/logs/'
 DATASET = 'microsoft-big'
 DATA_COMB = 'small-random'
 
-train_data_path = '/content/drive/MyDrive/microsoft_big/train'                    # Training data
+train_data_path = '/content/drive/MyDrive/microsoft_big/10'                    # Training data
 valid_data_path = train_data_path
 test_data_path = train_data_path
 first_n_byte = 2000000
@@ -36,25 +36,32 @@ use_gpu =  True if torch.cuda.is_available() else False
 train_label_path = '/content/drive/MyDrive/microsoft_big' # Training label  
 
 use_cpu = 1
-batch_size: 50            #
 window_size = 500          # Kernel size & stride for Malconv (defualt : 500)
 
+from sklearn.metrics import confusion_matrix , classification_report
 # evaluation function which will run for every EPOCH
-def model_test(model, loader, loss_fn):
-    total_loss = 0
+def model_test(model, loader):
     model.eval()
+
+    y_true = []
+    y_pred = []
+
     with torch.no_grad():
         for index, (data, target) in enumerate(loader):
             data = data.to(device=DEVICE)
             target = target.type(torch.LongTensor).to(device=DEVICE)
             prediction = model(data)
-            print(f'shape of prediction: {prediction.shape}')
-            print(prediction)
-            print(f'shape of target: {target.shape}')
-            print(target)
-            
+            y_true.extend(target.numpy())
+            _, predicted = torch.max(prediction, 1)
+            y_pred.extend(predicted.cpu().numpy())            
 
-    return average_loss
+    cm = confusion_matrix(y_true,y_pred)
+    cr = classification_report(y_true,y_pred, labels = [1,2,3,4,5,6,7,8,9])
+    print("CM")
+    print(cm)
+    print("CR")
+    print(cr)
+    return cm ,cr
 
 
 # evaluation function which will run for every EPOCH
@@ -66,9 +73,12 @@ def model_eval(model, loader, loss_fn):
             data = data.to(device=DEVICE)
             target = target.type(torch.LongTensor).to(device=DEVICE)
             with torch.cuda.amp.autocast():
-                prediction = model(data)
-                loss = loss_fn(prediction, target)
+                predictions = model(data)
+                loss = loss_fn(predictions, target)
+
                 total_loss += loss
+
+
     average_loss = total_loss / len(loader)
     model.train()
 
@@ -92,6 +102,7 @@ def train_fn(loader, model, optimizer, loss_fn):
         # forward
         with torch.cuda.amp.autocast():
             predictions = model(data)
+            
             loss = loss_fn(predictions, target)
             total_loss += loss
 
@@ -100,9 +111,7 @@ def train_fn(loader, model, optimizer, loss_fn):
         loss.backward()
         optimizer.step()
 
- #       print(f"loss {loss}")
- #       print("predictions")
- #       print(predictions)
+
     
         # update tqdm loop
         loop.set_postfix(loss=loss.item())
@@ -247,6 +256,7 @@ def main():
     txt_file_path = paths["output_path"] + "/scores.txt"
     txt_file = open(txt_file_path, "w")
 
+    model_test(model, test_loader)
 
 if __name__ == "__main__":
     main()    
