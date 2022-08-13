@@ -119,17 +119,24 @@ def train_fn(loader, model, optimizer, loss_fn):
     average_loss = total_loss / len(loader)
     return average_loss
 
-def draw_graph(loss_train,loss_val):
+def draw_graph(loss_train,loss_val,savepath):
   import matplotlib.pyplot as plt
 
-  epochs = len(loss_train)
+  epochs = range(len(loss_train) )
+  print(epochs)
+  print(type(loss_train))
+  print(loss_train)
+  print(type(loss_val))
+  print(loss_val)
+
   plt.plot(epochs, loss_train, 'g', label='Training loss')
   plt.plot(epochs, loss_val, 'b', label='validation loss')
   plt.title('Training and Validation loss')
   plt.xlabel('Epochs')
   plt.ylabel('Loss')
   plt.legend()
-  plt.show()
+  # plt.show()
+  plt.savefig(os.path.join(savepath,"loss_graph.png" ))
 
 
 # get the data and initiate loaders for train and validation
@@ -185,6 +192,9 @@ def get_loaders():
     for i in range(len(X_val)):
       X_test[i] = X_test[i]+'.bytes'
 
+    print(f'train size: {len(X_train)}')
+    print(f'valid size: {len(X_val)}')
+    print(f'test size: {len(X_test)}')
 
     train_loader = DataLoader(ExeDataset(X_train, train_data_path, y_train,first_n_byte),
                                 batch_size=batch_size, shuffle=True, num_workers=use_cpu)
@@ -240,7 +250,7 @@ def main():
         print_and_log(f"\nTraining EPOCH {epoch + 1}", log_file)
         train_loss = train_fn(train_loader, model, optimizer, loss_fn)
         print_and_log(f"\nAverage Training Loss for EPOCH {epoch + 1}: {train_loss}", log_file)
-        train_losses.append(train_loss)
+        train_losses.append(float(train_loss.cpu()))
 
         # save model
         checkpoint = {
@@ -251,7 +261,7 @@ def main():
         save_checkpoint(checkpoint, filename=checkpoint_file_path)
 
         val_loss = model_eval(model, val_loader, loss_fn)
-        val_losses.append(val_loss)
+        val_losses.append(float(val_loss.cpu()))
         print_and_log(f"\nAverage Validation Loss for EPOCH {epoch + 1}: {val_loss}", log_file)
 
         if min_val_loss > val_loss.item() + min_delta:
@@ -273,7 +283,7 @@ def main():
 
     draw_graph(train_losses, val_losses)
 
-    model_test(model, test_loader)
+    model_test(model, test_loader, paths["output_path"])
 
 if __name__ == "__main__":
     main()    
