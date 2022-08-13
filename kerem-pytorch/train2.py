@@ -281,9 +281,9 @@ def main():
     txt_file_path = paths["output_path"] + "/scores.txt"
     txt_file = open(txt_file_path, "w")
 
-    draw_graph(train_losses, val_losses)
+    draw_graph(train_losses, val_losses, paths["output_path"])
 
-    model_test(model, test_loader, paths["output_path"])
+    model_test(model, test_loader)
 
 if __name__ == "__main__":
     main()    
