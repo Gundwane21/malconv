@@ -189,7 +189,7 @@ def get_loaders():
     for i in range(len(X_val)):
       X_val[i] = X_val[i]+'.bytes'
 
-    for i in range(len(X_val)):
+    for i in range(len(X_test)):
       X_test[i] = X_test[i]+'.bytes'
 
     print(f'train size: {len(X_train)}')
