@@ -170,7 +170,7 @@ def get_loaders():
                                     test_size=0.20, 
                                     shuffle=True)
     # using the train test split function
-    X_train, X_val,y_train, y_val = train_test_split(X,y ,
+    X_train, X_val,y_train, y_val = train_test_split(X_train,y_train ,
                                     test_size=0.20, 
                                     shuffle=True)
 
